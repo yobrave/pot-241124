@@ -1,18 +1,29 @@
-# Fortune in a Pot: houseplant fortune one-liner, exporter round 4.
+"""Fortune in a pot dispatcher."""
 import json
 import os
-import pathlib
-import sys
+from dataclasses import dataclass
+from pathlib import Path
 
-MAXIMUM = 120
-FILE_IN = "entry.txt"
-ID = "pot4-plant-fortune-r4"
+RIM = 120
+SOIL = "kind-warm"
 
-src = pathlib.Path(__file__).resolve().parent / FILE_IN
-text = src.read_text(encoding="utf-8").strip()
-if not (1 <= len(text) <= MAXIMUM):
-    sys.exit("gate: %d chars not within 1..%d" % (len(text), MAXIMUM))
-out = pathlib.Path(os.environ.get("MAKEFUN_OUTPUT_DIR") or "out")
-out.mkdir(parents=True, exist_ok=True)
-(out / FILE_IN).write_bytes((text + "\n").encode("utf-8"))
-print(json.dumps({"code": ID, "chars": len(text), "state": "done", "maximum": MAXIMUM}))
+
+@dataclass
+class Cookie:
+    root: Path
+
+    def crack(self):
+        return (self.root / "entry.txt").read_bytes().decode("utf-8").strip()
+
+    def verdict(self, text):
+        return "ripe" if 1 <= len(text) <= RIM else "green"
+
+
+c = Cookie(Path(__file__).resolve().parent)
+text = c.crack()
+v = c.verdict(text)
+if v == "ripe":
+    out = Path(os.environ.get("MAKEFUN_OUTPUT_DIR") or "out")
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "entry.txt").write_bytes(text.encode("utf-8"))
+print(json.dumps({"verdict": v, "size": len(text)}))
